@@ -12,11 +12,15 @@
 
 // // *******************************************************************************/
 
+
+
+//Programa paralelo
+
 #include<iomanip>
 #include<iostream>
 #include<cmath>
 #include<stdlib.h>
-
+#include <omp.h>
 
 int main(){
 
@@ -48,38 +52,50 @@ double u[ntau][nx];
 
 // Initializing the matrix with zeros
 
+
 for(i=0; i < nx; i++){
 for(j=0; j < ntau; j++){
 	 u[j][i] = 0.0;
 }}
 
-for(i=0; i < nx; i++){
-	u[0][i] = 0.0; //sin(M_PI*i*dx/L);// 0.5;
-}
+#pragma omp parallel shared(i,j,nx,ntau)
+    #pragma omp single nowait 
 
-for(j=1; j < ntau; j++){
-u[j][0] = 1.0; //100
-u[j][nx-1] = 1.0; //100
-}
+    for(i=0; i < nx; i++){
+        u[0][i] = 0.0; //sin(M_PI*i*dx/L);// 0.5;
+    }
+
+    for(j=1; j < ntau; j++){
+        u[j][0] = 1.0; //100
+        u[j][nx-1] = 1.0; //100
+    }
+    
+
+
+
+
+
+
 
 clock_t time_req = clock();
 // In this part we use the equation proposed in the book
-for(j=0; j < ntau-1; j++){
-for(i=1; i < nx-1; i++){
-		 u[j+1][i] = lambda*u[j][i-1] + (1-2*lambda)*u[j][i] + lambda*u[j][i+1]; // Equation
-} } 
-time_req = clock() - time_req;
-std::cout << "Calculating the matrix took " << (float)time_req/CLOCKS_PER_SEC << " seconds" << std::endl;
+#pragma omp task 
+    for(j=0; j < ntau-1; j++){
+        for(i=1; i < nx-1; i++){
+            u[j+1][i] = lambda*u[j][i-1] + (1-2*lambda)*u[j][i] + lambda*u[j][i+1]; // Equation
+    } } 
+time_req =  clock() - time_req;
+std::cout << "Calculating matrix took " << (float)time_req/CLOCKS_PER_SEC << " seconds" << std::endl;
 
 	
 char const* m[ntau][nx];
 
-// Print matrix
-for(j=0; j < ntau; j++){
-for(i=0; i < nx; i++){
-	std::cout << u[j][i] << " ";
-} } 
+// // Print matrix
+// for(j=0; j < ntau; j++){
+// for(i=0; i < nx; i++){
+// 	std::cout << u[j][i] << " ";
+// } } 
  
-return 0;
+// return 0;
 
 }
