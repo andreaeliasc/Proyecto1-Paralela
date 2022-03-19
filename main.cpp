@@ -1,85 +1,65 @@
-// // /******************************************************************************
-// // Authors:
-// // Andrea Elias 17048
-// // Sara Zavala 18893
-// // Diego Estrada 18540
 
-// // References:
-// // -> Carnahan, B., Luther, H. A., &amp; Wilkes, J. O. (1969). Applied Numerical Methods. Wiley.
+#include <chrono>
+#include <iostream>
+#include <iomanip>
+#include "Equation.cpp"  
+using namespace std::chrono;
+  
+int THREAD_COUNT_PARALLEL = 5000;
+double Tl = 0.0;
+double Tr = 60.0;
 
-// // -> Trobec, R., Slivnik, B., Bulić, P., & Robič, B. (2018). Introduction to parallel computing: 
-// // from algorithms to programming on state-of-the-art platforms. Springer.
-
-// // *******************************************************************************/
-
-#include<iomanip>
-#include<iostream>
-#include<cmath>
-#include<stdlib.h>
-
-
-int main(){
-
-
-// Declaring constants
-int  nx;
-int  ntau;
-double dx;  
-double dtau; 
-double TMAX; 
-double L;  
-double lambda;
-int i, j;
-
-// Defining constants
-dx = 0.05;  
-dtau = 0.001; 
-TMAX = 0.95; 
-L = 1.00;  
-lambda = dtau/pow(dx,2);
-nx = L/dx+1;
-ntau = TMAX/dtau+1;
-
-
-
-// Creating the matrix
-
-double u[ntau][nx];  
-
-// Initializing the matrix with zeros
-
-for(i=0; i < nx; i++){
-for(j=0; j < ntau; j++){
-	 u[j][i] = 0.0;
-}}
-
-for(i=0; i < nx; i++){
-	u[0][i] = 0.0; //sin(M_PI*i*dx/L);// 0.5;
+void parallel_function(int THREAD_COUNT, double Tl, double Tr, double C, int x_intervals, int t_intervals){
+    calculo_calor(THREAD_COUNT, Tl, Tr, C , x_intervals, t_intervals);
 }
 
-for(j=1; j < ntau; j++){
-u[j][0] = 1.0; //100
-u[j][nx-1] = 1.0; //100
+void sec_function(int THREAD_COUNT, double Tl, double Tr, double C, int x_intervals, int t_intervals){
+    calculo_calor_sec(THREAD_COUNT, Tl, Tr, C , x_intervals, t_intervals);
 }
 
-clock_t time_req = clock();
-// In this part we use the equation proposed in the book
-for(j=0; j < ntau-1; j++){
-for(i=1; i < nx-1; i++){
-		 u[j+1][i] = lambda*u[j][i-1] + (1-2*lambda)*u[j][i] + lambda*u[j][i+1]; // Equation
-} } 
-time_req = clock() - time_req;
-std::cout << "Calculating the matrix took " << (float)time_req/CLOCKS_PER_SEC << " seconds" << std::endl;
 
-	
-char const* m[ntau][nx];
+int main(int argc, char const *argv[])
+{
+    try {
+        THREAD_COUNT_PARALLEL = strtol(argv[1], NULL, 10);
+        Tl = strtol(argv[2], NULL, 10);
+        Tr = strtol(argv[3], NULL, 10);
+    } catch (const std::exception&) {
+        std::cout << "Inputs erroneos" << std::endl;
+    }
 
-// Print matrix
-for(j=0; j < ntau; j++){
-for(i=0; i < nx; i++){
-	std::cout << u[j][i] << " ";
-} } 
- 
-return 0;
+    double C=0.4;
+    int x_intervals = THREAD_COUNT_PARALLEL;
+    int t_intervals = int((pow(x_intervals, 2) * 6e-3)/C);
 
+    std::cout << "C =  " << C << std::endl;
+    std::cout << "Tenemos --> " << x_intervals << " intervalos en x" << std::endl;
+    std::cout << "Tl: " << Tl << "°c" << std::endl;
+    std::cout << "Tenemos --> " << t_intervals << " intervalos en t" << std::endl;
+    std::cout << "Tr: " << Tr << "°c\n" << std::endl;
+
+
+    std::cout<<"Ejecucion secuencial --> " << std::endl;
+    auto initial_seq_time = high_resolution_clock::now();
+    sec_function(THREAD_COUNT_PARALLEL, Tl, Tr, C , x_intervals, t_intervals);
+    auto final_seq_time = high_resolution_clock::now();
+
+    std::cout<<"Ejecucion paralela --> " << std::endl;
+    auto initial_parallel_time = high_resolution_clock::now();
+    parallel_function(THREAD_COUNT_PARALLEL, Tl, Tr, C , x_intervals, t_intervals);
+    auto final_parallel_time = high_resolution_clock::now();
+
+    auto seq_time = duration_cast<microseconds>(final_seq_time - initial_seq_time);
+    auto parallel_time = duration_cast<microseconds>(final_parallel_time - initial_parallel_time);
+
+
+    std::cout << "Tiempo Secuencial: " << seq_time.count() << "µs" << std::endl;
+    std::cout << "Tiempo Paralelo: " << parallel_time.count() << " µs" << std::endl;
+    long double speedup = seq_time.count() / parallel_time.count();
+    long double eff = speedup / THREAD_COUNT_PARALLEL;
+    std::cout << std::fixed << "Eficiencia: " << eff << std::endl;
+    std::cout << std::fixed << "Speed up: " << speedup << std::endl;
+
+
+    return 0;
 }
