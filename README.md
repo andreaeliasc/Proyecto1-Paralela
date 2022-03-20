@@ -9,4 +9,4 @@ Entre los requerimientos para el proyecto se tienen:
 - Un mínimo de 5000 intervalos discretos de distancia
 - Una diferencia de temperatura de al menos 60°C entre las temperaturas de
 frontera
-- Versión secuencial y paralela del algoritmo
+- Versión secuencial y paralela del algoritmo.
